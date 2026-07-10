@@ -1,15 +1,16 @@
-import base64
+import io
 
 from django.core.files.base import ContentFile
 from django.core.management.base import BaseCommand
+from PIL import Image, ImageDraw
 
 from recipes.models import Ingredient, Recipe, RecipeIngredient, Tag
 from users.models import User
 
-TEST_IMAGE_B64 = (
-    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABAgMAAABieywaAAAACVBMVEUAAAD'
-    '///9fX1/S0ecCAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAACklEQVQImWNoA'
-    'AAAggCByxOyYQAAAABJRU5ErkJggg=='
+PLACEHOLDER_COLORS = (
+    (255, 179, 71),
+    (108, 178, 108),
+    (94, 139, 209),
 )
 
 TAGS = (
@@ -60,8 +61,28 @@ TEST_RECIPES = (
 TEST_USER_PASSWORD = 'foodgram2026'
 
 
-def make_test_image(name):
-    return ContentFile(base64.b64decode(TEST_IMAGE_B64), name=name)
+def make_test_image(name, label, color):
+    image = Image.new('RGB', (600, 400), color=color)
+    draw = ImageDraw.Draw(image)
+    words = label.split()
+    lines, current = [], ''
+    for word in words:
+        candidate = f'{current} {word}'.strip()
+        if len(candidate) > 16:
+            lines.append(current)
+            current = word
+        else:
+            current = candidate
+    lines.append(current)
+    line_height = 28
+    start_y = 200 - (len(lines) * line_height) // 2
+    for i, line in enumerate(lines):
+        draw.text(
+            (40, start_y + i * line_height), line, fill=(255, 255, 255),
+        )
+    buffer = io.BytesIO()
+    image.save(buffer, format='PNG')
+    return ContentFile(buffer.getvalue(), name=name)
 
 
 class Command(BaseCommand):
@@ -85,9 +106,9 @@ class Command(BaseCommand):
             ))
             return
 
-        for user_data, recipe_data, tag in zip(
+        for index, (user_data, recipe_data, tag) in enumerate(zip(
             TEST_USERS, TEST_RECIPES, tags,
-        ):
+        )):
             user, created = User.objects.get_or_create(
                 username=user_data['username'],
                 defaults={
@@ -110,7 +131,11 @@ class Command(BaseCommand):
                 name=recipe_data['name'],
                 text=recipe_data['text'],
                 cooking_time=recipe_data['cooking_time'],
-                image=make_test_image(f'{user.username}.png'),
+                image=make_test_image(
+                    f'{user.username}.png',
+                    recipe_data['name'],
+                    PLACEHOLDER_COLORS[index % len(PLACEHOLDER_COLORS)],
+                ),
             )
             recipe.tags.add(tag)
             RecipeIngredient.objects.bulk_create(
