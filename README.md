@@ -1,4 +1,91 @@
-Находясь в папке infra, выполните команду docker-compose up. При выполнении этой команды контейнер frontend, описанный в docker-compose.yml, подготовит файлы, необходимые для работы фронтенд-приложения, а затем прекратит свою работу.
+# Foodgram
 
-По адресу http://localhost изучите фронтенд веб-приложения, а по адресу http://localhost/api/docs/ — спецификацию API.
+Foodgram — сайт для публикации рецептов. Пользователи могут публиковать свои
+рецепты, добавлять чужие рецепты в избранное, подписываться на других авторов
+и формировать список покупок с автоматическим суммированием ингредиентов по
+всем рецептам, добавленным в список.
 
+Проект доступен по адресу: _добавьте сюда IP или доменное имя после деплоя_.
+
+## Технологии
+
+- Python 3.11, Django 4.2, Django REST Framework
+- Djoser + токен-аутентификация
+- PostgreSQL
+- Nginx, Gunicorn
+- Docker, Docker Compose
+- GitHub Actions (CI/CD)
+- React (готовый фронтенд)
+
+## Структура проекта
+
+- `backend/` — Django-проект (REST API)
+- `frontend/` — React-приложение (SPA)
+- `infra/` — конфигурация nginx и docker-compose для локального запуска
+- `docs/` — спецификация API (OpenAPI/Redoc)
+- `data/` — исходный список ингредиентов (json/csv)
+- `docker-compose.production.yml` — конфигурация для продакшен-сервера
+  (использует готовые образы из Docker Hub)
+- `.github/workflows/main.yml` — CI/CD: линтер, сборка и публикация образов
+  в Docker Hub, деплой на сервер по SSH
+
+## Локальный запуск бэкенда без Docker (для разработки)
+
+```bash
+cd backend
+python3 -m venv venv
+source venv/bin/activate          # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+cp .env.example .env              # и отредактируйте при необходимости
+python manage.py migrate
+python manage.py load_ingredients
+python manage.py createsuperuser
+python manage.py create_test_data # теги, тестовые пользователи и рецепты
+python manage.py runserver
+```
+
+API будет доступен на `http://127.0.0.1:8000/api/`, админка — на
+`http://127.0.0.1:8000/admin/`.
+
+## Локальный запуск всего проекта в Docker
+
+```bash
+cd infra
+docker compose up --build
+```
+
+- Фронтенд: `http://localhost/`
+- API: `http://localhost/api/`
+- Документация API: `http://localhost/api/docs/`
+- Админка: `http://localhost/admin/`
+
+Файл `infra/.env` уже содержит рабочие значения для локального запуска.
+После первого старта, если ещё не создан суперпользователь и тестовые данные:
+
+```bash
+docker compose exec backend python manage.py createsuperuser
+docker compose exec backend python manage.py create_test_data
+```
+
+(Ингредиенты и миграции применяются автоматически при каждом старте
+контейнера `backend`.)
+
+## Деплой на удалённый сервер
+
+Подробная пошаговая инструкция — в разделе, который был предоставлен
+отдельно при настройке проекта (Docker Hub, секреты GitHub Actions, nginx
+на сервере). Кратко:
+
+1. На сервере устанавливаются Docker и Docker Compose.
+2. В домашнюю директорию пользователя на сервере копируется
+   `docker-compose.production.yml` и создаётся файл `.env` (см.
+   `.env.example` в корне репозитория).
+3. GitHub Actions при пуше в ветку `main` собирает образы `backend`,
+   `frontend` и `gateway`, публикует их в Docker Hub и разворачивает проект
+   на сервере по SSH.
+4. Системный nginx на сервере проксирует внешний порт 80 на порт 8000,
+   где слушает контейнер `gateway`.
+
+## Автор
+
+[churilina-polina](https://github.com/churilina-polina)

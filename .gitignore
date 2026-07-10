@@ -1,6 +1,7 @@
 frontend/node_modules
 infra/frontend/build
 .env
+.DS_Store
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -140,3 +141,4 @@ dmypy.json
 
 static/
 media/
+collected_static/
