@@ -39,7 +39,7 @@ services:
   gateway:
     image: ${DOCKER_USERNAME}/foodgram_gateway:latest
     ports:
-      - "8000:80"
+      - "9090:80"
     volumes:
       - frontend_build:/usr/share/nginx/html/
       - static:/staticfiles
