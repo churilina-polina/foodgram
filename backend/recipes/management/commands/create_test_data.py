@@ -11,6 +11,8 @@ PLACEHOLDER_COLORS = (
     (255, 179, 71),
     (108, 178, 108),
     (94, 139, 209),
+    (219, 112, 147),
+    (147, 112, 219),
 )
 
 TAGS = (
@@ -45,16 +47,72 @@ TEST_RECIPES = (
         'name': 'Омлет с сыром',
         'text': 'Взбить яйца, добавить сыр, жарить на сковороде 5 минут.',
         'cooking_time': 10,
+        'author': 'vasya.pupkin',
+        'tags': ('breakfast',),
+    },
+    {
+        'name': 'Сырники со сметаной',
+        'text': (
+            'Смешать творог, яйцо и муку, обжарить сырники до румяной '
+            'корочки, подавать со сметаной.'
+        ),
+        'cooking_time': 20,
+        'author': 'vasya.pupkin',
+        'tags': ('breakfast',),
+    },
+    {
+        'name': 'Блины на кефире',
+        'text': (
+            'Замесить тесто на кефире, выпекать блины на раскалённой '
+            'сковороде с двух сторон.'
+        ),
+        'cooking_time': 25,
+        'author': 'vasya.pupkin',
+        'tags': ('breakfast',),
     },
     {
         'name': 'Овощной суп',
         'text': 'Сварить овощи в бульоне 30 минут, посолить по вкусу.',
         'cooking_time': 40,
+        'author': 'second_user',
+        'tags': ('lunch',),
+    },
+    {
+        'name': 'Салат Цезарь с курицей',
+        'text': (
+            'Обжарить курицу и сухарики, смешать с листьями салата и '
+            'соусом цезарь, посыпать пармезаном.'
+        ),
+        'cooking_time': 15,
+        'author': 'second_user',
+        'tags': ('lunch', 'dinner'),
+    },
+    {
+        'name': 'Куриный бульон с лапшой',
+        'text': (
+            'Сварить бульон из курицы, добавить лапшу и зелень, '
+            'проварить ещё 10 минут.'
+        ),
+        'cooking_time': 45,
+        'author': 'second_user',
+        'tags': ('lunch',),
     },
     {
         'name': 'Гречка с курицей',
         'text': 'Отварить гречку, обжарить курицу, смешать и потомить.',
         'cooking_time': 35,
+        'author': 'third_user',
+        'tags': ('lunch', 'dinner'),
+    },
+    {
+        'name': 'Плов с курицей',
+        'text': (
+            'Обжарить курицу с морковью и луком, добавить рис и воду, '
+            'томить под крышкой до готовности риса.'
+        ),
+        'cooking_time': 50,
+        'author': 'third_user',
+        'tags': ('lunch', 'dinner'),
     },
 )
 
@@ -87,16 +145,16 @@ def make_test_image(name, label, color):
 
 class Command(BaseCommand):
     help = (
-        'Создаёт тестовые теги, нескольких пользователей и по одному '
-        'рецепту от каждого. Ингредиенты должны быть уже загружены '
+        'Создаёт тестовые теги, нескольких пользователей и несколько '
+        'рецептов от каждого. Ингредиенты должны быть уже загружены '
         'командой load_ingredients.'
     )
 
     def handle(self, *args, **options):
-        tags = [
-            Tag.objects.get_or_create(name=name, slug=slug)[0]
+        tags_by_slug = {
+            slug: Tag.objects.get_or_create(name=name, slug=slug)[0]
             for name, slug in TAGS
-        ]
+        }
 
         ingredients = list(Ingredient.objects.all()[:5])
         if not ingredients:
@@ -106,9 +164,8 @@ class Command(BaseCommand):
             ))
             return
 
-        for index, (user_data, recipe_data, tag) in enumerate(zip(
-            TEST_USERS, TEST_RECIPES, tags,
-        )):
+        users_by_username = {}
+        for user_data in TEST_USERS:
             user, created = User.objects.get_or_create(
                 username=user_data['username'],
                 defaults={
@@ -120,32 +177,40 @@ class Command(BaseCommand):
             if created:
                 user.set_password(TEST_USER_PASSWORD)
                 user.save()
+            users_by_username[user_data['username']] = user
 
+        created_count = 0
+        for index, recipe_data in enumerate(TEST_RECIPES):
+            author = users_by_username[recipe_data['author']]
             if Recipe.objects.filter(
-                author=user, name=recipe_data['name'],
+                author=author, name=recipe_data['name'],
             ).exists():
                 continue
 
             recipe = Recipe.objects.create(
-                author=user,
+                author=author,
                 name=recipe_data['name'],
                 text=recipe_data['text'],
                 cooking_time=recipe_data['cooking_time'],
                 image=make_test_image(
-                    f'{user.username}.png',
+                    f'{author.username}-{index}.png',
                     recipe_data['name'],
                     PLACEHOLDER_COLORS[index % len(PLACEHOLDER_COLORS)],
                 ),
             )
-            recipe.tags.add(tag)
+            recipe.tags.set(
+                tags_by_slug[slug] for slug in recipe_data['tags']
+            )
             RecipeIngredient.objects.bulk_create(
                 RecipeIngredient(
                     recipe=recipe, ingredient=ingredient, amount=100,
                 )
                 for ingredient in ingredients
             )
+            created_count += 1
 
         self.stdout.write(self.style.SUCCESS(
             f'Готово: {len(TAGS)} тегов, {len(TEST_USERS)} пользователей '
-            f'(пароль для всех: "{TEST_USER_PASSWORD}"), по 1 рецепту.'
+            f'(пароль для всех: "{TEST_USER_PASSWORD}"), '
+            f'создано новых рецептов: {created_count}.'
         ))

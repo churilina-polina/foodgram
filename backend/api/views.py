@@ -1,4 +1,4 @@
-from django.db.models import BooleanField, Exists, OuterRef, Sum, Value
+from django.db.models import BooleanField, Exists, OuterRef, Value
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from djoser.views import UserViewSet as DjoserUserViewSet
@@ -9,9 +9,7 @@ from rest_framework.permissions import (
 )
 from rest_framework.response import Response
 
-from recipes.models import (
-    Favorite, Ingredient, Recipe, RecipeIngredient, ShoppingCart, Tag,
-)
+from recipes.models import Favorite, Ingredient, Recipe, ShoppingCart, Tag
 from users.models import Subscribe, User
 
 from .filters import IngredientFilter, RecipeFilter
@@ -22,30 +20,7 @@ from .serializers import (
     RecipeReadSerializer, RecipeWriteSerializer, TagSerializer,
     UserWithRecipesSerializer,
 )
-
-
-def build_shopping_cart_content(user):
-    ingredients = (
-        RecipeIngredient.objects
-        .filter(recipe__shopping_cart__user=user)
-        .values('ingredient__name', 'ingredient__measurement_unit')
-        .annotate(total_amount=Sum('amount'))
-        .order_by('ingredient__name')
-    )
-    recipes = Recipe.objects.filter(
-        shopping_cart__user=user,
-    ).order_by('name')
-
-    lines = ['Список покупок', '']
-    lines += [
-        f"{index}. {item['ingredient__name'].capitalize()} "
-        f"({item['ingredient__measurement_unit']}) — "
-        f"{item['total_amount']}"
-        for index, item in enumerate(ingredients, start=1)
-    ]
-    lines += ['', 'Рецепты в списке покупок:']
-    lines += [f'- {recipe.name}' for recipe in recipes]
-    return '\n'.join(lines)
+from .utils import build_shopping_cart_content
 
 
 class CustomUserViewSet(DjoserUserViewSet):
@@ -180,10 +155,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
-
-    def partial_update(self, request, *args, **kwargs):
-        kwargs['partial'] = False
-        return super().update(request, *args, **kwargs)
 
     def _handle_relation(self, request, pk, model, add_error, remove_error):
         recipe = get_object_or_404(Recipe, pk=pk)

@@ -43,7 +43,8 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
-          context: ./backend
+          context: .
+          file: backend/Dockerfile
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/foodgram_backend:latest
 
@@ -102,7 +103,7 @@ jobs:
           username: ${{ secrets.USER }}
           key: ${{ secrets.SSH_KEY }}
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
-          source: "docker-compose.production.yml"
+          source: "infra/docker-compose.production.yml"
           target: "foodgram"
           overwrite: true
       - name: Deploy on the server
@@ -113,8 +114,8 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           script: |
-            cd foodgram
-            sudo docker compose -f docker-compose.production.yml pull
-            sudo docker compose -f docker-compose.production.yml down
-            sudo docker compose -f docker-compose.production.yml up -d
+            cd foodgram/infra
+            sudo docker compose -p foodgram -f docker-compose.production.yml pull
+            sudo docker compose -p foodgram -f docker-compose.production.yml down
+            sudo docker compose -p foodgram -f docker-compose.production.yml up -d
             sudo docker system prune -f

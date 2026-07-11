@@ -22,23 +22,20 @@ class RecipeFilter(filters.FilterSet):
         to_field_name='slug',
         queryset=Tag.objects.all(),
     )
-    is_favorited = filters.NumberFilter(method='filter_is_favorited')
-    is_in_shopping_cart = filters.NumberFilter(
-        method='filter_is_in_shopping_cart',
-    )
+    is_favorited = filters.NumberFilter(method='filter_by_relation')
+    is_in_shopping_cart = filters.NumberFilter(method='filter_by_relation')
+
+    relation_lookups = {
+        'is_favorited': 'favorites__user',
+        'is_in_shopping_cart': 'shopping_cart__user',
+    }
 
     class Meta:
         model = Recipe
         fields = ('author', 'tags')
 
-    def filter_is_favorited(self, queryset, name, value):
+    def filter_by_relation(self, queryset, name, value):
         user = self.request.user
         if value == 1 and user.is_authenticated:
-            return queryset.filter(favorites__user=user)
-        return queryset
-
-    def filter_is_in_shopping_cart(self, queryset, name, value):
-        user = self.request.user
-        if value == 1 and user.is_authenticated:
-            return queryset.filter(shopping_cart__user=user)
+            return queryset.filter(**{self.relation_lookups[name]: user})
         return queryset

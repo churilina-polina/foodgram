@@ -1,8 +1,4 @@
-import base64
-import uuid
-
 from django.conf import settings
-from django.core.files.base import ContentFile
 from djoser.serializers import (
     UserCreateSerializer as DjoserUserCreateSerializer,
 )
@@ -14,18 +10,7 @@ from recipes.models import (
 )
 from users.models import User
 
-
-class Base64ImageField(serializers.ImageField):
-    """Декодирует картинку, присланную фронтендом строкой base64."""
-
-    def to_internal_value(self, data):
-        if isinstance(data, str) and data.startswith('data:image'):
-            header, imgstr = data.split(';base64,')
-            ext = header.split('/')[-1]
-            data = ContentFile(
-                base64.b64decode(imgstr), name=f'{uuid.uuid4()}.{ext}',
-            )
-        return super().to_internal_value(data)
+from .fields import Base64ImageField
 
 
 class CustomUserCreateSerializer(DjoserUserCreateSerializer):
@@ -174,8 +159,7 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
             )
         return attrs
 
-    @staticmethod
-    def _set_ingredients(recipe, ingredients):
+    def _set_ingredients(self, recipe, ingredients):
         RecipeIngredient.objects.bulk_create(
             RecipeIngredient(
                 recipe=recipe,

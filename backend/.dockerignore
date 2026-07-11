@@ -1,8 +1,0 @@
-venv/
-__pycache__/
-*.pyc
-.env
-db.sqlite3
-media/
-collected_static/
-.git

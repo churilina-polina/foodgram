@@ -38,6 +38,13 @@ const SingleCard = ({ loadItem, updateOrders }) => {
     api
       .copyRecipeLink({ id })
       .then(({ "short-link": shortLink }) => {
+        if (!navigator.clipboard) {
+          setNotificationError({
+            text: `Ваша ссылка: ${shortLink}`,
+            position: "40px",
+          });
+          return;
+        }
         navigator.clipboard
           .writeText(shortLink)
           .then(() => {
@@ -47,10 +54,6 @@ const SingleCard = ({ loadItem, updateOrders }) => {
             }, 3000);
           })
           .catch(() => {
-            /**
-             * В Safari не работает запись в буфер внутри асинхронного запроса,
-             * поэтому добавил отдельную плашку на этот случай
-             */
             setNotificationError({
               text: `Ваша ссылка: ${shortLink}`,
               position: "40px",

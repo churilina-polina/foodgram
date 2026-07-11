@@ -26,11 +26,11 @@ http://158.160.138.220:9090/admin/).
 
 - `backend/` — Django-проект (REST API)
 - `frontend/` — React-приложение (SPA)
-- `infra/` — конфигурация nginx и docker-compose для локального запуска
+- `infra/` — конфигурация nginx, docker-compose для локального запуска
+  (`docker-compose.yml`) и для продакшен-сервера (`docker-compose.production.yml`,
+  использует готовые образы из Docker Hub)
 - `docs/` — спецификация API (OpenAPI/Redoc)
 - `data/` — исходный список ингредиентов (json/csv)
-- `docker-compose.production.yml` — конфигурация для продакшен-сервера
-  (использует готовые образы из Docker Hub)
 - `.github/workflows/main.yml` — CI/CD: линтер, сборка и публикация образов
   в Docker Hub, деплой на сервер по SSH
 
@@ -82,14 +82,14 @@ docker compose exec backend python manage.py create_test_data
 на сервере). Кратко:
 
 1. На сервере устанавливаются Docker и Docker Compose.
-2. В домашнюю директорию пользователя на сервере копируется
-   `docker-compose.production.yml` и создаётся файл `.env` (см.
-   `.env.example` в корне репозитория).
+2. На сервере создаётся директория `foodgram/infra/`, куда GitHub Actions
+   копирует `docker-compose.production.yml`. Рядом нужно создать файл
+   `.env` (см. `infra/.env.example` в репозитории).
 3. GitHub Actions при пуше в ветку `main` собирает образы `backend`,
    `frontend` и `gateway`, публикует их в Docker Hub и разворачивает проект
    на сервере по SSH.
 4. Контейнер `gateway` публикуется на порту, указанном в `ports` сервиса
-   `gateway` в `docker-compose.production.yml` (в этом проекте — 9090).
+   `gateway` в `infra/docker-compose.production.yml` (в этом проекте — 9090).
    Если порт 80 на сервере свободен, туда же можно поставить `"80:80"`.
 
 ## Автор
