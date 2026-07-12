@@ -21,6 +21,8 @@ CSRF_TRUSTED_ORIGINS = [
     if origin
 ]
 
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 
 INSTALLED_APPS = [
     'django.contrib.admin',
