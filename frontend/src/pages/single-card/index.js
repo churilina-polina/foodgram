@@ -38,13 +38,6 @@ const SingleCard = ({ loadItem, updateOrders }) => {
     api
       .copyRecipeLink({ id })
       .then(({ "short-link": shortLink }) => {
-        if (!navigator.clipboard) {
-          setNotificationError({
-            text: `Ваша ссылка: ${shortLink}`,
-            position: "40px",
-          });
-          return;
-        }
         navigator.clipboard
           .writeText(shortLink)
           .then(() => {

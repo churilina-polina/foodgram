@@ -9,7 +9,6 @@ from recipes.models import (
     Ingredient, Recipe, RecipeIngredient, Tag,
 )
 from users.models import User
-
 from .fields import Base64ImageField
 
 
