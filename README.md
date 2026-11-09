@@ -82,6 +82,10 @@ docker compose exec backend python manage.py create_test_data
 
 ## Деплой на удалённый сервер
 
+Автодеплой в GitHub Actions включается переменной репозитория `DEPLOY_ENABLED=true`
+(Settings → Secrets and variables → Actions → Variables). Без неё выполняются тесты и
+сборка образов, а шаг деплоя пропускается.
+
 Подробная пошаговая инструкция — в разделе, который был предоставлен
 отдельно при настройке проекта (Docker Hub, секреты GitHub Actions, nginx
 на сервере). Кратко:

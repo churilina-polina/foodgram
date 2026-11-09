@@ -88,6 +88,9 @@ jobs:
           tags: ${{ secrets.DOCKER_USERNAME }}/foodgram_gateway:latest
 
   deploy:
+    # Деплой включается переменной репозитория DEPLOY_ENABLED=true (Settings → Variables),
+    # пока сервер выключен, сборка и тесты остаются обязательными, а деплой пропускается.
+    if: ${{ vars.DEPLOY_ENABLED == 'true' }}
     runs-on: ubuntu-latest
     needs:
       - build_and_push_backend
